@@ -33,7 +33,8 @@ function createQuestion(input) {
     source: input.source.trim(),
     reason: input.reason.trim(),
     box: 1,
-    nextReview: todayStr(),
+    // 등록 폼에서 받은 값으로 새 문항을 만든다. 새 문항은 상자 1에서 시작하고, 내일 처음 복습한다.
+    nextReview: addDays(todayStr(), 1), // 상자 1 간격(1일): 내일부터 복습
     done: false,
     history: []
   };
