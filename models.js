@@ -15,3 +15,39 @@
  * @property {boolean} done        상자 5까지 통과해 졸업했는지
  * @property {{date: string, correct: boolean}[]} history 풀이 기록
  */
+
+/**
+ * 등록 폼에서 받은 값으로 새 문항을 만든다. 새 문항은 상자 1에서 시작한다.
+ * @param {Object} input 폼에서 읽은 값
+ * @returns {Question}
+ */
+function createQuestion(input) {
+  return {
+    id: "q" + Date.now(),
+    examType: input.examType,
+    subject: input.subject.trim(),
+    unit: input.unit.trim(),
+    question: input.question.trim(),
+    answer: input.answer.trim(),
+    explanation: input.explanation.trim(),
+    source: input.source.trim(),
+    reason: input.reason.trim(),
+    box: 1,
+    nextReview: todayStr(),
+    done: false,
+    history: []
+  };
+}
+
+/**
+ * 필수 칸이 비었는지 검사한다.
+ * @param {Object} input 폼에서 읽은 값
+ * @returns {string[]} 빠진 칸 이름 목록 (비어 있으면 통과)
+ */
+function validateQuestion(input) {
+  const missing = [];
+  if (!input.subject.trim()) missing.push("과목");
+  if (!input.question.trim()) missing.push("문제");
+  if (!input.answer.trim()) missing.push("정답");
+  return missing;
+}

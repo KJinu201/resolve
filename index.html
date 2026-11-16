@@ -3,10 +3,53 @@
 <head>
   <meta charset="UTF-8">
   <title>ReSolve - 자격증 오답노트</title>
+  <style>
+    body { font-family: sans-serif; max-width: 640px; margin: 24px auto; color: #111; }
+    label { display: block; margin-top: 12px; font-weight: bold; }
+    input, select, textarea { width: 100%; padding: 6px; margin-top: 4px; box-sizing: border-box; }
+    textarea { height: 70px; }
+    button { margin-top: 16px; padding: 8px 16px; background: #111; color: #fff; border: none; cursor: pointer; }
+    #form-msg { margin-top: 12px; }
+    .error { color: #c00; }
+  </style>
 </head>
 <body>
   <h1>ReSolve</h1>
-  <div id="app"></div>
+
+  <section id="register">
+    <h2>오답 등록</h2>
+    <form id="register-form">
+      <label>과목 *
+        <input id="subject" placeholder="예: SQLD">
+      </label>
+      <label>시험 구분
+        <select id="examType">
+          <option value="필기">필기</option>
+          <option value="실기">실기</option>
+        </select>
+      </label>
+      <label>단원
+        <input id="unit" placeholder="예: 조인">
+      </label>
+      <label>문제 *
+        <textarea id="question"></textarea>
+      </label>
+      <label>정답 *
+        <textarea id="answer"></textarea>
+      </label>
+      <label>해설
+        <textarea id="explanation"></textarea>
+      </label>
+      <label>출처
+        <input id="source" placeholder="예: 2024년 1회">
+      </label>
+      <label>틀린 이유
+        <input id="reason" placeholder="예: 개념 헷갈림">
+      </label>
+      <button type="submit">저장</button>
+    </form>
+    <p id="form-msg"></p>
+  </section>
 
   <script src="models.js"></script>
   <script src="storage.js"></script>
