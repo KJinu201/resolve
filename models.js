@@ -23,7 +23,7 @@
  */
 function createQuestion(input) {
   return {
-    id: "q" + Date.now(),
+    id: "q-" + crypto.randomUUID(),
     examType: input.examType,
     subject: input.subject.trim(),
     unit: input.unit.trim(),

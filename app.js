@@ -83,7 +83,14 @@ form.addEventListener("submit", function (event) {
     FIELDS.forEach(name => {
       changes[name] = name === "examType" ? input[name] : input[name].trim();
     });
-    const updated = updateQuestion(editingId, changes);
+    let updated;
+    try {
+      updated = updateQuestion(editingId, changes);
+    } catch (e) {
+      msg.textContent = "저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.";
+      msg.className = "error";
+      return;
+    }
     if (!updated) {
       // 수정하는 사이에 조회 화면에서 그 문항을 지운 경우
       resetForm();
@@ -97,7 +104,13 @@ form.addEventListener("submit", function (event) {
     return;
   }
 
-  addQuestion(createQuestion(input));
+  try {
+    addQuestion(createQuestion(input));
+  } catch (e) {
+    msg.textContent = "저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.";
+    msg.className = "error";
+    return;
+  }
   msg.textContent = "저장했습니다. (지금까지 " + loadQuestions().length + "문항)";
   msg.className = "";
   form.reset();
@@ -155,8 +168,16 @@ function makeItem(q) {
   delBtn.className = "del";
   delBtn.addEventListener("click", () => {
     if (confirm("이 문항을 삭제할까요?")) {
-      deleteQuestion(q.id);
-      renderList();
+      try {
+        const deleted = deleteQuestion(q.id);
+        if (!deleted) {
+          countEl.textContent = "저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.";
+          return;
+        }
+        renderList();
+      } catch (e) {
+        countEl.textContent = "저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.";
+      }
     }
   });
 
