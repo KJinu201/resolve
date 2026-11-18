@@ -11,8 +11,9 @@
   <script src="storage.js"></script>
   <script src="scheduler.js"></script>
   <script>
-    console.log("테스트 시작");
-    // 11/19에 console.assert 테스트를 여기에 넣습니다.
+    console.assert(typeof createQuestion === "function", "createQuestion should exist");
+    console.assert(typeof loadQuestions === "function", "loadQuestions should exist");
+    console.assert(typeof addDays === "function", "addDays should exist");
   </script>
 </body>
 </html>

@@ -11,13 +11,29 @@
     button { margin-top: 16px; padding: 8px 16px; background: #111; color: #fff; border: none; cursor: pointer; }
     #form-msg { margin-top: 12px; }
     .error { color: #c00; }
+    nav button { margin-top: 0; margin-right: 4px; background: #fff; color: #111; border: 1px solid #111; }
+    nav button.active { background: #111; color: #fff; }
+    .hidden { display: none; }
+    .filters { display: flex; gap: 8px; }
+    .filters select, .filters input { width: auto; flex: 1; }
+    .item { border: 1px solid #ccc; padding: 12px; margin-top: 12px; }
+    .item .meta { font-size: 13px; color: #555; }
+    .item .q { margin: 6px 0; white-space: pre-wrap; }
+    .item button { margin-top: 8px; padding: 4px 10px; }
+    .item button.del { background: #fff; color: #c00; border: 1px solid #c00; }
+    #cancel-edit { background: #fff; color: #111; border: 1px solid #111; }
   </style>
 </head>
 <body>
   <h1>ReSolve</h1>
 
+  <nav>
+    <button type="button" data-screen="register" class="active">등록</button>
+    <button type="button" data-screen="list">조회</button>
+  </nav>
+
   <section id="register">
-    <h2>오답 등록</h2>
+    <h2 id="form-title">오답 등록</h2>
     <form id="register-form">
       <label>과목 *
         <input id="subject" placeholder="예: SQLD">
@@ -46,15 +62,36 @@
       <label>틀린 이유
         <input id="reason" placeholder="예: 개념 헷갈림">
       </label>
-      <button type="submit">저장</button>
+      <button type="submit" id="submit-btn">저장</button>
+      <button type="button" id="cancel-edit" class="hidden">수정 취소</button>
     </form>
     <p id="form-msg"></p>
+  </section>
+
+  <section id="list" class="hidden">
+    <h2>오답 조회</h2>
+    <div class="filters">
+      <select id="filter-subject">
+        <option value="">전체 과목</option>
+      </select>
+      <select id="filter-box">
+        <option value="">전체 상자</option>
+        <option value="1">상자 1</option>
+        <option value="2">상자 2</option>
+        <option value="3">상자 3</option>
+        <option value="4">상자 4</option>
+        <option value="5">상자 5</option>
+        <option value="done">졸업</option>
+      </select>
+      <input id="filter-keyword" placeholder="키워드">
+    </div>
+    <p id="list-count"></p>
+    <div id="question-list"></div>
   </section>
 
   <script src="models.js"></script>
   <script src="storage.js"></script>
   <script src="scheduler.js"></script>
-  <script src="stats.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

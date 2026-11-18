@@ -33,7 +33,6 @@ function createQuestion(input) {
     source: input.source.trim(),
     reason: input.reason.trim(),
     box: 1,
-    // 등록 폼에서 받은 값으로 새 문항을 만든다. 새 문항은 상자 1에서 시작하고, 내일 처음 복습한다.
     nextReview: addDays(todayStr(), 1), // 상자 1 간격(1일): 내일부터 복습
     done: false,
     history: []
@@ -51,4 +50,25 @@ function validateQuestion(input) {
   if (!input.question.trim()) missing.push("문제");
   if (!input.answer.trim()) missing.push("정답");
   return missing;
+}
+/**
+ * 조회 조건에 맞는 문항만 골라낸다. 조건이 빈 값이면 그 조건은 검사하지 않는다.
+ * @param {Question[]} list
+ * @param {{subject: string, box: string, keyword: string}} filter
+ *   box는 "1"~"5" 또는 "done"(졸업)
+ * @returns {Question[]}
+ */
+function filterQuestions(list, filter) {
+  const keyword = filter.keyword.trim().toLowerCase();
+  return list.filter(q => {
+    if (filter.subject && q.subject !== filter.subject) return false;
+    if (filter.box === "done" && !q.done) return false;
+    if (filter.box && filter.box !== "done" && (q.done || String(q.box) !== filter.box)) return false;
+    if (keyword) {
+      const text = [q.question, q.answer, q.explanation, q.unit, q.reason, q.source]
+        .join(" ").toLowerCase();
+      if (!text.includes(keyword)) return false;
+    }
+    return true;
+  });
 }
