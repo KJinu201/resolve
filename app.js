@@ -7,8 +7,14 @@ const submitBtn = document.getElementById("submit-btn");
 const cancelBtn = document.getElementById("cancel-edit");
 
 const FIELDS = ["subject", "examType", "unit", "question", "answer", "explanation", "source", "reason"];
+const SAVE_ERROR_MSG = "저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.";
 
 let editingId = null; // 수정 중인 문항 id (등록 중이면 null)
+
+/** 저장 실패 안내 문구를 지정한 요소에 보여 준다. */
+function showSaveError(el) {
+  el.textContent = SAVE_ERROR_MSG;
+}
 
 /* ---------- 화면 전환 ---------- */
 
@@ -88,7 +94,7 @@ form.addEventListener("submit", function (event) {
     try {
       updated = updateQuestion(editingId, changes);
     } catch (e) {
-      msg.textContent = "저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.";
+      showSaveError(msg);
       msg.className = "error";
       return;
     }
@@ -108,7 +114,7 @@ form.addEventListener("submit", function (event) {
   try {
     addQuestion(createQuestion(input));
   } catch (e) {
-    msg.textContent = "저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.";
+    showSaveError(msg);
     msg.className = "error";
     return;
   }
@@ -177,7 +183,7 @@ function makeItem(q) {
           countEl.textContent = "이미 삭제된 문항입니다.";
         }
       } catch (e) {
-        countEl.textContent = "저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.";
+        showSaveError(countEl);
       }
     }
   });
@@ -333,7 +339,7 @@ function markAnswer(correct) {
   try {
     updated = answerQuestion(id, correct, todayStr());
   } catch (e) {
-    reviewMsgEl.textContent = "저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.";
+    showSaveError(reviewMsgEl);
     return;
   }
   reviewMsgEl.textContent = "";
