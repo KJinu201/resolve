@@ -170,11 +170,11 @@ function makeItem(q) {
     if (confirm("이 문항을 삭제할까요?")) {
       try {
         const deleted = deleteQuestion(q.id);
-        if (!deleted) {
-          countEl.textContent = "저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.";
-          return;
-        }
         renderList();
+        if (!deleted) {
+          // 다른 탭 등에서 이미 지워진 경우: 목록을 새로 그린 뒤 안내
+          countEl.textContent = "이미 삭제된 문항입니다.";
+        }
       } catch (e) {
         countEl.textContent = "저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.";
       }

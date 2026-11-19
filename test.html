@@ -3,17 +3,181 @@
 <head>
   <meta charset="UTF-8">
   <title>ReSolve 테스트</title>
+  <style>
+    body { font-family: sans-serif; max-width: 720px; margin: 24px auto; color: #111; }
+    #summary { font-size: 18px; font-weight: bold; }
+    li { margin: 4px 0; }
+    .pass { color: #111; }
+    .fail { color: #c00; font-weight: bold; }
+  </style>
 </head>
 <body>
-  <p>F12 → Console 탭에서 결과를 확인하세요.</p>
+  <h1>ReSolve 테스트</h1>
+  <p id="summary"></p>
+  <ol id="results"></ol>
+  <p>실패한 항목은 F12 → Console에도 "Assertion failed"로 표시됩니다.</p>
 
   <script src="models.js"></script>
   <script src="storage.js"></script>
   <script src="scheduler.js"></script>
   <script>
-    console.assert(typeof createQuestion === "function", "createQuestion should exist");
-    console.assert(typeof loadQuestions === "function", "loadQuestions should exist");
-    console.assert(typeof addDays === "function", "addDays should exist");
+    /* ---------- 테스트 도구 ---------- */
+    const results = [];
+
+    /** 조건이 참이면 통과. console.assert로 콘솔에도 남기고, 화면 목록에도 적는다. */
+    function check(name, condition) {
+      console.assert(condition, name);
+      results.push({ name, ok: !!condition });
+    }
+
+    /** 배열·객체를 글자로 바꿔 비교한다. */
+    function same(a, b) {
+      return JSON.stringify(a) === JSON.stringify(b);
+    }
+
+    /** 테스트용 문항. 필요한 값만 바꿔 쓴다. */
+    function sample(changes) {
+      return {
+        id: "t", examType: "필기", subject: "SQLD", unit: "", question: "문제", answer: "정답",
+        explanation: "", source: "", reason: "", box: 1, nextReview: "2026-11-19",
+        done: false, history: [], ...changes
+      };
+    }
+
+    const TODAY = "2026-11-19"; // 날짜를 고정해 언제 실행해도 결과가 같게 함
+
+    /* ---------- 1. 날짜 계산 (scheduler.js) ---------- */
+    check("addDays: 월말을 넘기면 다음 달 1일", addDays("2026-01-31", 1) === "2026-02-01");
+    check("addDays: 연말을 넘기면 다음 해 1월 1일", addDays("2026-12-31", 1) === "2027-01-01");
+    check("addDays: 윤년 2월 28일 다음은 29일, 평년은 3월 1일",
+      addDays("2028-02-28", 1) === "2028-02-29" && addDays("2026-02-28", 1) === "2026-03-01");
+    check("addDays: 상자 5 간격(16일)도 달을 넘겨 계산", addDays(TODAY, 16) === "2026-12-05");
+    const now = new Date();
+    const localToday = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" +
+      String(now.getDate()).padStart(2, "0");
+    check("todayStr: 로컬 날짜를 YYYY-MM-DD로 돌려줌", todayStr() === localToday);
+
+    /* ---------- 2. 문항 만들기·입력 검사 (models.js) ---------- */
+    const created = createQuestion({
+      examType: "실기", subject: "  정보처리산업기사 ", unit: "", question: " SELECT 문 ", answer: "답",
+      explanation: "", source: "", reason: ""
+    });
+    check("createQuestion: 상자 1, 내일 복습, 졸업 아님, 기록 없음, 앞뒤 공백 제거",
+      created.box === 1 && created.nextReview === addDays(todayStr(), 1) && created.done === false &&
+      created.history.length === 0 && created.subject === "정보처리산업기사" && created.question === "SELECT 문");
+
+    const ids = new Set();
+    for (let i = 0; i < 100; i++) {
+      ids.add(createQuestion({ examType: "필기", subject: "a", unit: "", question: "b", answer: "c",
+        explanation: "", source: "", reason: "" }).id);
+    }
+    check("createQuestion: 연속으로 100개 만들어도 ID가 모두 다름", ids.size === 100);
+
+    check("[예외] validateQuestion: 필수 칸이 비었거나 공백뿐이면 빠진 칸 이름을 돌려줌",
+      same(validateQuestion({ subject: "", question: "   ", answer: "\n" }), ["과목", "문제", "정답"]));
+    check("validateQuestion: 필수 칸이 모두 있으면 빈 배열",
+      validateQuestion({ subject: "SQLD", question: "문제", answer: "정답" }).length === 0);
+
+    const pool = [
+      sample({ id: "a", subject: "SQLD", question: "조인 종류", box: 2 }),
+      sample({ id: "b", subject: "ADsP", question: "회귀 분석", box: 2 }),
+      sample({ id: "c", subject: "SQLD", question: "서브쿼리", box: 5, done: true })
+    ];
+    check("filterQuestions: 과목 + 상자 + 키워드(대소문자 무시)를 함께 적용",
+      same(filterQuestions(pool, { subject: "SQLD", box: "2", keyword: "조인" }).map(q => q.id), ["a"]));
+    check("filterQuestions: '졸업'을 고르면 졸업한 문항만, 상자 5를 고르면 졸업 문항은 빠짐",
+      same(filterQuestions(pool, { subject: "", box: "done", keyword: "" }).map(q => q.id), ["c"]) &&
+      filterQuestions(pool, { subject: "", box: "5", keyword: "" }).length === 0);
+
+    /* ---------- 3. 상자 이동 (scheduler.js applyAnswer) ---------- */
+    const r1 = applyAnswer(sample({ box: 1 }), true, TODAY);
+    check("applyAnswer: 상자 1에서 맞으면 상자 2, 2일 뒤 복습", r1.box === 2 && r1.nextReview === "2026-11-21");
+
+    const r4 = applyAnswer(sample({ box: 4 }), true, TODAY);
+    check("applyAnswer: 상자 4에서 맞으면 상자 5, 16일 뒤 복습", r4.box === 5 && r4.nextReview === "2026-12-05");
+
+    const r5 = applyAnswer(sample({ box: 5 }), true, TODAY);
+    check("applyAnswer: 상자 5에서 맞으면 졸업", r5.done === true && r5.box === 5);
+
+    const rw = applyAnswer(sample({ box: 3 }), false, TODAY);
+    check("applyAnswer: 틀리면 상자 1로 돌아가 다음 날 복습", rw.box === 1 && rw.nextReview === "2026-11-20");
+
+    const original = sample({ box: 2 });
+    const after = applyAnswer(original, true, TODAY);
+    check("applyAnswer: 풀이 기록을 남기고, 원래 문항 객체는 바꾸지 않음",
+      same(after.history, [{ date: TODAY, correct: true }]) && original.box === 2 && original.history.length === 0);
+
+    /* ---------- 4. 오늘의 복습 (scheduler.js getTodayReview) ---------- */
+    const reviewPool = [
+      sample({ id: "today", nextReview: "2026-11-19" }),
+      sample({ id: "past", nextReview: "2026-11-10" }),
+      sample({ id: "tomorrow", nextReview: "2026-11-20" }),
+      sample({ id: "graduated", nextReview: "2026-11-01", done: true })
+    ];
+    check("getTodayReview: 오늘·지난 복습일만 고르고, 내일 것과 졸업 문항은 뺌, 오래된 것부터",
+      same(getTodayReview(reviewPool, TODAY).map(q => q.id), ["past", "today"]));
+
+    const many = [];
+    for (let i = 0; i < 25; i++) many.push(sample({ id: "m" + i, nextReview: "2026-11-19" }));
+    many.push(sample({ id: "oldest", nextReview: "2026-11-01" }));
+    const picked = getTodayReview(many, TODAY);
+    check("getTodayReview: 최대 20개, 가장 오래된 것이 먼저, 같은 날짜는 등록 순서",
+      picked.length === 20 && picked[0].id === "oldest" && picked[1].id === "m0" && picked[19].id === "m18");
+
+    check("[예외] getTodayReview: 문항이 하나도 없으면 빈 배열", getTodayReview([], TODAY).length === 0);
+
+    /* ---------- 5. 저장 (storage.js) ---------- */
+    // 테스트가 실제 오답 데이터를 지우지 않도록, 원래 값을 보관했다가 끝나면 되돌린다
+    const backup = localStorage.getItem(STORAGE_KEY);
+    const backupBroken = localStorage.getItem(STORAGE_KEY + "-broken");
+    const realSetItem = Storage.prototype.setItem;
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      check("[예외] loadQuestions: 저장된 것이 없으면 빈 배열", same(loadQuestions(), []));
+
+      addQuestion(sample({ id: "s1" }));
+      addQuestion(sample({ id: "s2" }));
+      const updated = updateQuestion("s1", { answer: "새 정답" });
+      const deleted = deleteQuestion("s2");
+      const list = loadQuestions();
+      check("저장 왕복: 추가 → 수정 → 삭제 후 다시 불러오면 바뀐 내용 그대로",
+        updated && deleted && list.length === 1 && list[0].id === "s1" && list[0].answer === "새 정답");
+
+      check("[예외] updateQuestion·deleteQuestion: 없는 ID면 false, 목록은 그대로",
+        updateQuestion("없음", { answer: "x" }) === false && deleteQuestion("없음") === false &&
+        loadQuestions().length === 1);
+
+      localStorage.setItem(STORAGE_KEY, "{깨진 JSON");
+      const loaded = loadQuestions();
+      check("[예외] loadQuestions: 저장 데이터가 깨져 있으면 빈 배열, 원래 내용은 -broken에 보관",
+        same(loaded, []) && localStorage.getItem(STORAGE_KEY + "-broken") === "{깨진 JSON");
+
+      localStorage.setItem(STORAGE_KEY, "[]");
+      Storage.prototype.setItem = function () { throw new Error("QuotaExceededError (테스트)"); };
+      let threw = false;
+      try { addQuestion(sample({ id: "s3" })); } catch (e) { threw = true; }
+      Storage.prototype.setItem = realSetItem;
+      check("[예외] 저장 공간이 꽉 차 저장에 실패하면 오류를 화면 코드(app.js)로 넘김, 목록은 그대로",
+        threw && loadQuestions().length === 0);
+    } finally {
+      Storage.prototype.setItem = realSetItem;
+      if (backup === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, backup);
+      if (backupBroken === null) localStorage.removeItem(STORAGE_KEY + "-broken");
+      else localStorage.setItem(STORAGE_KEY + "-broken", backupBroken);
+    }
+
+    /* ---------- 결과 표시 ---------- */
+    const passed = results.filter(r => r.ok).length;
+    document.getElementById("summary").textContent =
+      "통과 " + passed + " / 전체 " + results.length + (passed === results.length ? " — 모두 통과" : " — 실패 있음");
+    const ol = document.getElementById("results");
+    results.forEach(r => {
+      const li = document.createElement("li");
+      li.className = r.ok ? "pass" : "fail";
+      li.textContent = (r.ok ? "통과  " : "실패  ") + r.name;
+      ol.appendChild(li);
+    });
+    console.log("ReSolve 테스트: 통과 " + passed + " / 전체 " + results.length);
   </script>
 </body>
 </html>

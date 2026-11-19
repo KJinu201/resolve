@@ -25,3 +25,46 @@ function addDays(dateStr, n) {
   date.setUTCDate(date.getUTCDate() + n);
   return date.toISOString().slice(0, 10);
 }
+
+/** 상자별 복습 간격(일). 상자 1 = 1일, 상자 2 = 2일 … 상자 5 = 16일 */
+const BOX_INTERVALS = [1, 2, 4, 8, 16];
+const LAST_BOX = BOX_INTERVALS.length;
+
+/**
+ * 퀴즈 결과를 반영한 새 문항을 돌려준다. (원래 문항 객체는 바꾸지 않음)
+ * - 맞음: 다음 상자로 이동하고, 그 상자 간격만큼 뒤에 다시 복습
+ * - 마지막 상자(5)에서 맞음: 졸업(done = true), 더 이상 복습에 나오지 않음
+ * - 틀림: 어느 상자에 있든 상자 1로 돌아가 다음 날 다시 복습
+ * @param {Question} q
+ * @param {boolean} correct 맞았으면 true
+ * @param {string} today 오늘 날짜 "YYYY-MM-DD" (테스트에서 날짜를 고정하려고 인자로 받음)
+ * @returns {Question}
+ */
+function applyAnswer(q, correct, today) {
+  const history = [...q.history, { date: today, correct: correct }];
+
+  if (!correct) {
+    return { ...q, box: 1, nextReview: addDays(today, BOX_INTERVALS[0]), history };
+  }
+  if (q.box >= LAST_BOX) {
+    return { ...q, done: true, history };
+  }
+  const nextBox = q.box + 1;
+  return { ...q, box: nextBox, nextReview: addDays(today, BOX_INTERVALS[nextBox - 1]), history };
+}
+
+/**
+ * 오늘 복습할 문항을 고른다. 졸업하지 않았고 복습일이 오늘이거나 지난 문항이 대상이다.
+ * 복습일이 오래된 것부터, 같으면 등록 순서대로 최대 limit개를 돌려준다.
+ * ("YYYY-MM-DD" 문자열은 글자 순서 = 날짜 순서라서 그대로 비교한다)
+ * @param {Question[]} list
+ * @param {string} today "YYYY-MM-DD"
+ * @param {number} [limit=20]
+ * @returns {Question[]}
+ */
+function getTodayReview(list, today, limit = 20) {
+  return list
+    .filter(q => !q.done && q.nextReview <= today)
+    .sort((a, b) => (a.nextReview < b.nextReview ? -1 : a.nextReview > b.nextReview ? 1 : 0))
+    .slice(0, limit);
+}
