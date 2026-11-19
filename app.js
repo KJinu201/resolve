@@ -56,6 +56,7 @@ function fillForm(q) {
 function resetForm() {
   editingId = null;
   form.reset();
+  clearPaste();
   formTitle.textContent = "오답 등록";
   submitBtn.textContent = "저장";
   cancelBtn.classList.add("hidden");
@@ -121,12 +122,64 @@ form.addEventListener("submit", function (event) {
   msg.textContent = "저장했습니다. (지금까지 " + loadQuestions().length + "문항)";
   msg.className = "";
   form.reset();
+  clearPaste();
 });
 
 cancelBtn.addEventListener("click", () => {
   resetForm();
   msg.textContent = "";
   showScreen("list");
+});
+
+/* ---------- 문제 글 붙여넣어 칸 채우기 ---------- */
+
+const pasteText = document.getElementById("paste-text");
+const pasteMsg = document.getElementById("paste-msg");
+const PASTE_FIELDS = ["unit", "question", "answer", "explanation"]; // 붙여넣기로 채우는 칸
+
+/** 붙여넣기 칸과 안내 문구를 비운다. */
+function clearPaste() {
+  pasteText.value = "";
+  pasteMsg.textContent = "";
+}
+
+/** 무엇을 채웠고 무엇을 못 찾았는지 안내 문구를 만든다. */
+function describeParse(parsed) {
+  const lines = [];
+  const filled = [];
+  if (parsed.unit) filled.push("단원");
+  filled.push(parsed.choices.length > 0 ? "문제(보기 " + parsed.choices.length + "개)" : "문제");
+  if (parsed.answer) filled.push("정답 " + parsed.answer.split(" ")[0]);
+  if (parsed.explanation) filled.push("해설");
+  lines.push("채운 칸: " + filled.join(", ") + ". 저장 전에 내용을 확인해 주세요.");
+  if (parsed.hasImage) lines.push("그림이 있는 문제입니다. 그림 속 표·내용은 글자로 복사되지 않으니 문제 칸에 직접 적어 주세요.");
+  if (parsed.choices.length === 0) lines.push("보기를 찾지 못해 붙여넣은 글을 문제 칸에 그대로 넣었습니다.");
+  if (!parsed.answer) lines.push("정답을 찾지 못했습니다. 정답 칸은 직접 입력해 주세요.");
+  return lines.join("\n");
+}
+
+document.getElementById("paste-fill").addEventListener("click", () => {
+  const parsed = parsePastedQuestion(pasteText.value);
+  if (!parsed || !parsed.question) {
+    pasteMsg.textContent = parsed ? "문제 부분을 찾지 못했습니다. 문제 글부터 복사해 주세요." : "붙여넣은 글이 없습니다.";
+    pasteMsg.className = "error";
+    return;
+  }
+
+  // 찾은 부분만 채운다. 이미 다른 내용이 적힌 칸이 있으면 먼저 묻는다.
+  const toFill = PASTE_FIELDS.filter(name => parsed[name]);
+  const willChange = toFill.some(name => {
+    const value = document.getElementById(name).value;
+    return value.trim() && value !== parsed[name];
+  });
+  if (willChange && !confirm("이미 입력한 단원·문제·정답·해설이 붙여넣은 내용으로 바뀝니다. 계속할까요?")) return;
+
+  toFill.forEach(name => {
+    document.getElementById(name).value = parsed[name];
+  });
+  msg.textContent = ""; // 앞에서 남은 "저장했습니다" 문구 지우기
+  pasteMsg.textContent = describeParse(parsed);
+  pasteMsg.className = parsed.answer && parsed.choices.length > 0 ? "" : "error";
 });
 
 /* ---------- 조회 ---------- */
