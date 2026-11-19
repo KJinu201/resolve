@@ -126,6 +126,10 @@
 
     check("[예외] getTodayReview: 문항이 하나도 없으면 빈 배열", getTodayReview([], TODAY).length === 0);
 
+    check("getNextReviewDate: 졸업 문항을 빼고 가장 빠른 복습일, [예외] 복습할 문항이 없으면 null",
+      getNextReviewDate(reviewPool) === "2026-11-10" &&
+      getNextReviewDate([sample({ done: true })]) === null && getNextReviewDate([]) === null);
+
     /* ---------- 5. 저장 (storage.js) ---------- */
     // 테스트가 실제 오답 데이터를 지우지 않도록, 원래 값을 보관했다가 끝나면 되돌린다
     const backup = localStorage.getItem(STORAGE_KEY);
@@ -146,6 +150,21 @@
       check("[예외] updateQuestion·deleteQuestion: 없는 ID면 false, 목록은 그대로",
         updateQuestion("없음", { answer: "x" }) === false && deleteQuestion("없음") === false &&
         loadQuestions().length === 1);
+
+      const a1 = answerQuestion("s1", true, TODAY);
+      const saved1 = loadQuestions()[0];
+      check("answerQuestion: 맞음을 저장하면 다시 불러와도 상자 2, 2일 뒤 복습, 기록 1개, 고친 정답 유지",
+        a1.box === 2 && saved1.box === 2 && saved1.nextReview === "2026-11-21" &&
+        saved1.history.length === 1 && saved1.answer === "새 정답");
+
+      answerQuestion("s1", false, TODAY);
+      const saved2 = loadQuestions()[0];
+      check("answerQuestion: 이어서 틀림을 저장하면 상자 1, 다음 날 복습, 기록이 순서대로 2개",
+        saved2.box === 1 && saved2.nextReview === "2026-11-20" &&
+        same(saved2.history.map(h => h.correct), [true, false]));
+
+      check("[예외] answerQuestion: 복습 중 삭제된 문항(없는 ID)이면 null, 목록은 그대로",
+        answerQuestion("없음", true, TODAY) === null && loadQuestions().length === 1);
 
       localStorage.setItem(STORAGE_KEY, "{깨진 JSON");
       const loaded = loadQuestions();

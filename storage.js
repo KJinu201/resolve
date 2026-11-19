@@ -64,3 +64,20 @@ function deleteQuestion(id) {
   saveQuestions(next);
   return true;
 }
+
+/**
+ * 퀴즈 결과(맞음/틀림)를 반영해 저장한다. 상자·다음 복습일·졸업 여부·풀이 기록이 바뀐다.
+ * 문제를 띄운 뒤 조회 화면이나 다른 탭에서 고쳤을 수 있으므로, 저장된 최신 문항을 다시 읽어 반영한다.
+ * @param {string} id
+ * @param {boolean} correct 맞았으면 true
+ * @param {string} today 오늘 날짜 "YYYY-MM-DD"
+ * @returns {Question|null} 바뀐 문항, 그 사이 삭제되어 찾지 못하면 null
+ */
+function answerQuestion(id, correct, today) {
+  const list = loadQuestions();
+  const index = list.findIndex(q => q.id === id);
+  if (index === -1) return null;
+  list[index] = applyAnswer(list[index], correct, today);
+  saveQuestions(list);
+  return list[index];
+}

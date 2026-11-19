@@ -68,3 +68,13 @@ function getTodayReview(list, today, limit = 20) {
     .sort((a, b) => (a.nextReview < b.nextReview ? -1 : a.nextReview > b.nextReview ? 1 : 0))
     .slice(0, limit);
 }
+
+/**
+ * 졸업하지 않은 문항 중 가장 빠른 다음 복습일을 돌려준다. (오늘 복습할 게 없을 때 안내용)
+ * @param {Question[]} list
+ * @returns {string|null} "YYYY-MM-DD", 복습할 문항이 하나도 없으면 null
+ */
+function getNextReviewDate(list) {
+  const dates = list.filter(q => !q.done).map(q => q.nextReview).sort();
+  return dates.length > 0 ? dates[0] : null;
+}

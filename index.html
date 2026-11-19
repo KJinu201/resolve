@@ -22,17 +22,61 @@
     .item button { margin-top: 8px; padding: 4px 10px; }
     .item button.del { background: #fff; color: #c00; border: 1px solid #c00; }
     #cancel-edit { background: #fff; color: #111; border: 1px solid #111; }
+    button.sub { background: #fff; color: #111; border: 1px solid #111; }
+    .answer-label { margin: 12px 0 0; font-size: 13px; font-weight: bold; }
+    #quiz-progress, #quiz-last { font-size: 13px; color: #555; }
+    #review-result { white-space: pre-line; }
   </style>
 </head>
 <body>
   <h1>ReSolve</h1>
 
   <nav>
-    <button type="button" data-screen="register" class="active">등록</button>
+    <button type="button" data-screen="review" class="active">오늘의 복습</button>
+    <button type="button" data-screen="register">등록</button>
     <button type="button" data-screen="list">조회</button>
   </nav>
 
-  <section id="register">
+  <section id="review">
+    <h2>오늘의 복습</h2>
+
+    <div id="review-start">
+      <p id="review-count"></p>
+      <button type="button" id="start-review">복습 시작</button>
+    </div>
+
+    <div id="quiz" class="hidden">
+      <p id="quiz-progress"></p>
+      <div class="item">
+        <div class="meta" id="quiz-meta"></div>
+        <div class="q" id="quiz-question"></div>
+        <div id="quiz-answer" class="hidden">
+          <p class="answer-label">정답</p>
+          <div class="q" id="quiz-answer-text"></div>
+          <div id="quiz-explanation-box">
+            <p class="answer-label">해설</p>
+            <div class="q" id="quiz-explanation"></div>
+          </div>
+        </div>
+      </div>
+      <button type="button" id="show-answer">정답 보기</button>
+      <span id="judge" class="hidden">
+        <button type="button" id="mark-correct">맞았어요</button>
+        <button type="button" id="mark-wrong" class="sub">틀렸어요</button>
+      </span>
+      <button type="button" id="stop-review" class="sub">그만하기</button>
+      <p id="quiz-last"></p>
+    </div>
+
+    <div id="review-done" class="hidden">
+      <p id="review-result"></p>
+      <button type="button" id="back-review" class="sub">처음으로</button>
+    </div>
+
+    <p id="review-msg" class="error"></p>
+  </section>
+
+  <section id="register" class="hidden">
     <h2 id="form-title">오답 등록</h2>
     <form id="register-form">
       <label>과목 *
