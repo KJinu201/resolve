@@ -89,6 +89,15 @@
     check("filterQuestions: '졸업'을 고르면 졸업한 문항만, 상자 5를 고르면 졸업 문항은 빠짐",
       same(filterQuestions(pool, { subject: "", box: "done", keyword: "" }).map(q => q.id), ["c"]) &&
       filterQuestions(pool, { subject: "", box: "5", keyword: "" }).length === 0);
+    const poolTextFields = [
+      sample({ id: "tx1", question: "문제 A", explanation: "조인 핵심 설명", source: "", reason: "" }),
+      sample({ id: "tx2", question: "문제 B", explanation: "", source: "2026 실전 특강", reason: "" }),
+      sample({ id: "tx3", question: "문제 C", explanation: "", source: "", reason: "NULL 비교에서 실수" })
+    ];
+    check("filterQuestions: 검색어가 문제 글이 아닌 해설·출처·틀린 이유 칸에만 있어도 찾음",
+      same(filterQuestions(poolTextFields, { subject: "", box: "", keyword: "조인 핵심" }).map(q => q.id), ["tx1"]) &&
+      same(filterQuestions(poolTextFields, { subject: "", box: "", keyword: "실전 특강" }).map(q => q.id), ["tx2"]) &&
+      same(filterQuestions(poolTextFields, { subject: "", box: "", keyword: "실수" }).map(q => q.id), ["tx3"]));
 
     /* ---------- 3. 상자 이동 (scheduler.js applyAnswer) ---------- */
     const r1 = applyAnswer(sample({ box: 1 }), true, TODAY);
@@ -124,6 +133,9 @@
     const picked = getTodayReview(many, TODAY);
     check("getTodayReview: 최대 20개, 가장 오래된 것이 먼저, 같은 날짜는 등록 순서",
       picked.length === 20 && picked[0].id === "oldest" && picked[1].id === "m0" && picked[19].id === "m18");
+    const allPicked = getTodayReview(many, TODAY, many.length);
+    check("getTodayReview: 제한 자리에 전체 문항 수를 넣으면 20개를 넘어도 전부 고름",
+      allPicked.length === many.length && allPicked[0].id === "oldest" && allPicked[25].id === "m24");
 
     check("[예외] getTodayReview: 문항이 하나도 없으면 빈 배열", getTodayReview([], TODAY).length === 0);
 
@@ -139,6 +151,18 @@
     try {
       localStorage.removeItem(STORAGE_KEY);
       check("[예외] loadQuestions: 저장된 것이 없으면 빈 배열", same(loadQuestions(), []));
+      const backupNonList = localStorage.getItem(STORAGE_KEY);
+      try {
+        localStorage.setItem(STORAGE_KEY, "{}");
+        const loadedObj = loadQuestions();
+        localStorage.setItem(STORAGE_KEY, '"text"');
+        const loadedText = loadQuestions();
+        check("[예외] loadQuestions: 저장값이 배열이 아니면 빈 배열을 돌려줌",
+          same(loadedObj, []) && same(loadedText, []));
+      } finally {
+        if (backupNonList === null) localStorage.removeItem(STORAGE_KEY);
+        else localStorage.setItem(STORAGE_KEY, backupNonList);
+      }
 
       addQuestion(sample({ id: "s1" }));
       addQuestion(sample({ id: "s2" }));
@@ -272,6 +296,11 @@
       p9.question === "주문 내역을 고객별로 묶어 보여 주는 설계 방식은?\n\n① 반정규화\n② 제1정규형\n③ 제2정규형\n④ 제3정규형" &&
       p9.answer === "① 반정규화" && p9.hasImage === true &&
       p9.explanation === "조회 성능을 위해 중복을 허용하는 것이 반정규화이다.");
+
+    const p10 = parsePastedQuestion(["문제 없이 정답만 표시", "정답: 3"].join("\n"));
+    const p11 = parsePastedQuestion(["보기가 4개인 문제", "① A", "② B", "③ C", "④ D", "정답: 5"].join("\n"));
+    check("[예외] parsePastedQuestion: 정답 번호에 맞는 보기가 없으면 'N번'으로 둠",
+      p10.answer === "3번" && p11.answer === "5번");
 
     check("[예외] parsePastedQuestion: 빈 글이나 공백뿐이면 null",
       parsePastedQuestion("") === null && parsePastedQuestion("  \n\t ") === null);
