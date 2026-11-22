@@ -54,14 +54,16 @@ function validateQuestion(input) {
 /**
  * 조회 조건에 맞는 문항만 골라낸다. 조건이 빈 값이면 그 조건은 검사하지 않는다.
  * @param {Question[]} list
- * @param {{subject: string, box: string, keyword: string}} filter
- *   box는 "1"~"5" 또는 "done"(졸업)
+ * @param {{subject: string, examType?: string, unit?: string, box: string, keyword: string}} filter
+ *   examType은 "필기"·"실기", box는 "1"~"5" 또는 "done"(졸업). examType·unit은 빼도 됨
  * @returns {Question[]}
  */
 function filterQuestions(list, filter) {
   const keyword = filter.keyword.trim().toLowerCase();
   return list.filter(q => {
     if (filter.subject && q.subject !== filter.subject) return false;
+    if (filter.examType && q.examType !== filter.examType) return false;
+    if (filter.unit && q.unit !== filter.unit) return false;
     if (filter.box === "done" && !q.done) return false;
     if (filter.box && filter.box !== "done" && (q.done || String(q.box) !== filter.box)) return false;
     if (keyword) {

@@ -55,7 +55,7 @@ function applyAnswer(q, correct, today) {
 
 /**
  * 오늘 복습할 문항을 고른다. 졸업하지 않았고 복습일이 오늘이거나 지난 문항이 대상이다.
- * 복습일이 오래된 것부터, 같으면 등록 순서대로 최대 limit개를 돌려준다.
+ * 계획서대로 상자 번호가 낮은 것부터, 같으면 오래 밀린 것(복습일이 이른 것)부터, 그것도 같으면 등록 순서대로 최대 limit개를 돌려준다.
  * ("YYYY-MM-DD" 문자열은 글자 순서 = 날짜 순서라서 그대로 비교한다)
  * @param {Question[]} list
  * @param {string} today "YYYY-MM-DD"
@@ -65,7 +65,7 @@ function applyAnswer(q, correct, today) {
 function getTodayReview(list, today, limit = 20) {
   return list
     .filter(q => !q.done && q.nextReview <= today)
-    .sort((a, b) => (a.nextReview < b.nextReview ? -1 : a.nextReview > b.nextReview ? 1 : 0))
+    .sort((a, b) => a.box - b.box || (a.nextReview < b.nextReview ? -1 : a.nextReview > b.nextReview ? 1 : 0))
     .slice(0, limit);
 }
 

@@ -14,7 +14,7 @@
     nav button { margin-top: 0; margin-right: 4px; background: #fff; color: #111; border: 1px solid #111; }
     nav button.active { background: #111; color: #fff; }
     .hidden { display: none; }
-    .filters { display: flex; gap: 8px; }
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; }
     .filters select, .filters input { width: auto; flex: 1; }
     .item { border: 1px solid #ccc; padding: 12px; margin-top: 12px; }
     .item .meta { font-size: 13px; color: #555; }
@@ -131,6 +131,14 @@
     <div class="filters">
       <select id="filter-subject">
         <option value="">전체 과목</option>
+      </select>
+      <select id="filter-exam">
+        <option value="">필기·실기</option>
+        <option value="필기">필기</option>
+        <option value="실기">실기</option>
+      </select>
+      <select id="filter-unit">
+        <option value="">전체 단원</option>
       </select>
       <select id="filter-box">
         <option value="">전체 상자</option>

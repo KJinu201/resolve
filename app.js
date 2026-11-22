@@ -187,21 +187,32 @@ document.getElementById("paste-fill").addEventListener("click", () => {
 const listEl = document.getElementById("question-list");
 const countEl = document.getElementById("list-count");
 const subjectSel = document.getElementById("filter-subject");
+const examSel = document.getElementById("filter-exam");
+const unitSel = document.getElementById("filter-unit");
 const boxSel = document.getElementById("filter-box");
 const keywordInput = document.getElementById("filter-keyword");
 
-/** 과목 선택 목록을 저장된 과목으로 다시 채운다. (고르던 값은 유지) */
-function refreshSubjectOptions(list) {
-  const current = subjectSel.value;
-  const subjects = [...new Set(list.map(q => q.subject))].sort();
-  subjectSel.innerHTML = '<option value="">전체 과목</option>';
-  subjects.forEach(s => {
+/**
+ * 선택 목록을 저장된 값으로 다시 채운다. (고르던 값은 유지, 빈 값은 목록에 넣지 않음)
+ * @param {HTMLSelectElement} select 채울 선택 목록
+ * @param {string[]} values 문항에서 모은 값
+ * @param {string} allLabel 맨 위 "전체" 항목 글자
+ */
+function refreshOptions(select, values, allLabel) {
+  const current = select.value;
+  const items = [...new Set(values.filter(Boolean))].sort();
+  select.innerHTML = "";
+  const all = document.createElement("option");
+  all.value = "";
+  all.textContent = allLabel;
+  select.appendChild(all);
+  items.forEach(v => {
     const opt = document.createElement("option");
-    opt.value = s;
-    opt.textContent = s;
-    subjectSel.appendChild(opt);
+    opt.value = v;
+    opt.textContent = v;
+    select.appendChild(opt);
   });
-  subjectSel.value = subjects.includes(current) ? current : "";
+  select.value = items.includes(current) ? current : "";
 }
 
 /** 문항 하나를 목록 카드로 만든다. (입력값은 textContent로만 넣어 HTML로 해석되지 않게 함) */
@@ -248,21 +259,30 @@ function makeItem(q) {
 /** 조건에 맞는 문항으로 목록을 다시 그린다. */
 function renderList() {
   const all = loadQuestions();
-  refreshSubjectOptions(all);
+  refreshOptions(subjectSel, all.map(q => q.subject), "전체 과목");
+  refreshOptions(unitSel, all.map(q => q.unit), "전체 단원");
   const shown = filterQuestions(all, {
     subject: subjectSel.value,
+    examType: examSel.value,
+    unit: unitSel.value,
     box: boxSel.value,
     keyword: keywordInput.value
   });
 
   listEl.innerHTML = "";
   shown.forEach(q => listEl.appendChild(makeItem(q)));
-  countEl.textContent = all.length === 0
-    ? "등록된 문항이 없습니다."
-    : "전체 " + all.length + "문항 중 " + shown.length + "문항";
+  if (all.length === 0) {
+    countEl.textContent = "등록된 문항이 없습니다.";
+  } else if (shown.length === 0) {
+    countEl.textContent = "해당 문항 없음 (전체 " + all.length + "문항)";
+  } else {
+    countEl.textContent = "전체 " + all.length + "문항 중 " + shown.length + "문항";
+  }
 }
 
 subjectSel.addEventListener("change", renderList);
+examSel.addEventListener("change", renderList);
+unitSel.addEventListener("change", renderList);
 boxSel.addEventListener("change", renderList);
 keywordInput.addEventListener("input", renderList);
 
@@ -323,7 +343,7 @@ function renderReview() {
     startReviewBtn.classList.add("hidden");
   } else {
     reviewCountEl.textContent = dueCount > todayCount
-      ? "복습할 문항이 " + dueCount + "개 있습니다. 오늘은 오래된 것부터 " + todayCount + "개를 풉니다."
+      ? "복습할 문항이 " + dueCount + "개 있습니다. 오늘은 상자 번호가 낮은 것부터 " + todayCount + "개를 풉니다."
       : "오늘 복습할 문항은 " + todayCount + "개입니다.";
     startReviewBtn.classList.remove("hidden");
   }

@@ -99,6 +99,18 @@
       same(filterQuestions(poolTextFields, { subject: "", box: "", keyword: "실전 특강" }).map(q => q.id), ["tx2"]) &&
       same(filterQuestions(poolTextFields, { subject: "", box: "", keyword: "실수" }).map(q => q.id), ["tx3"]));
 
+    const poolExamUnit = [
+      sample({ id: "e1", examType: "필기", unit: "조인" }),
+      sample({ id: "e2", examType: "실기", unit: "조인" }),
+      sample({ id: "e3", examType: "실기", unit: "정규화" })
+    ];
+    check("filterQuestions: 필기·실기와 단원으로 골라 보기 (계획서 기능 2)",
+      same(filterQuestions(poolExamUnit, { subject: "", examType: "실기", unit: "", box: "", keyword: "" }).map(q => q.id), ["e2", "e3"]) &&
+      same(filterQuestions(poolExamUnit, { subject: "", examType: "실기", unit: "조인", box: "", keyword: "" }).map(q => q.id), ["e2"]) &&
+      same(filterQuestions(poolExamUnit, { subject: "", examType: "", unit: "조인", box: "", keyword: "" }).map(q => q.id), ["e1", "e2"]));
+    check("[예외] filterQuestions: 조건에 맞는 문항이 없으면 빈 배열 (화면에는 '해당 문항 없음')",
+      filterQuestions(poolExamUnit, { subject: "", examType: "필기", unit: "정규화", box: "", keyword: "" }).length === 0);
+
     /* ---------- 3. 상자 이동 (scheduler.js applyAnswer) ---------- */
     const r1 = applyAnswer(sample({ box: 1 }), true, TODAY);
     check("applyAnswer: 상자 1에서 맞으면 상자 2, 2일 뒤 복습", r1.box === 2 && r1.nextReview === "2026-11-21");
@@ -111,6 +123,10 @@
 
     const rw = applyAnswer(sample({ box: 3 }), false, TODAY);
     check("applyAnswer: 틀리면 상자 1로 돌아가 다음 날 복습", rw.box === 1 && rw.nextReview === "2026-11-20");
+
+    const rPlan = applyAnswer(sample({ box: 3 }), true, "2026-10-01");
+    check("applyAnswer: 계획서 예시 그대로, 3번 상자 문항을 10월 1일에 맞히면 4번 상자, 다음 복습일 10월 9일",
+      rPlan.box === 4 && rPlan.nextReview === "2026-10-09");
 
     const original = sample({ box: 2 });
     const after = applyAnswer(original, true, TODAY);
@@ -136,6 +152,15 @@
     const allPicked = getTodayReview(many, TODAY, many.length);
     check("getTodayReview: 제한 자리에 전체 문항 수를 넣으면 20개를 넘어도 전부 고름",
       allPicked.length === many.length && allPicked[0].id === "oldest" && allPicked[25].id === "m24");
+
+    const boxOrder = getTodayReview([
+      sample({ id: "b3old", box: 3, nextReview: "2026-11-01" }),
+      sample({ id: "b1new", box: 1, nextReview: "2026-11-19" }),
+      sample({ id: "b2", box: 2, nextReview: "2026-11-15" }),
+      sample({ id: "b1old", box: 1, nextReview: "2026-11-05" })
+    ], TODAY);
+    check("getTodayReview: 계획서대로 상자 번호가 낮은 것부터, 같은 상자면 오래 밀린 것부터",
+      same(boxOrder.map(q => q.id), ["b1old", "b1new", "b2", "b3old"]));
 
     check("[예외] getTodayReview: 문항이 하나도 없으면 빈 배열", getTodayReview([], TODAY).length === 0);
 
@@ -296,6 +321,16 @@
       p9.question === "주문 내역을 고객별로 묶어 보여 주는 설계 방식은?\n\n① 반정규화\n② 제1정규형\n③ 제2정규형\n④ 제3정규형" &&
       p9.answer === "① 반정규화" && p9.hasImage === true &&
       p9.explanation === "조회 성능을 위해 중복을 허용하는 것이 반정규화이다.");
+
+    // 11/22 실제 복사 3차: 그림 자리 글자가 "문제 지문 이미지 1"로 나오는 문제
+    const pJimun = parsePastedQuestion([
+      "그림의 두 테이블을 INNER JOIN 하면 결과 행 수는?",
+      "￼문제 지문 이미지 1​",
+      "① 1", "② 2", "③ 3", "④ 4", "정답: ②"
+    ].join("\n"));
+    check("parsePastedQuestion: '문제 지문 이미지 1' 줄도 그림 자리로 보고 뺌",
+      pJimun.question === "그림의 두 테이블을 INNER JOIN 하면 결과 행 수는?\n\n① 1\n② 2\n③ 3\n④ 4" &&
+      pJimun.answer === "② 2" && pJimun.hasImage === true);
 
     const p10 = parsePastedQuestion(["문제 없이 정답만 표시", "정답: 3"].join("\n"));
     const p11 = parsePastedQuestion(["보기가 4개인 문제", "① A", "② B", "③ C", "④ D", "정답: 5"].join("\n"));
