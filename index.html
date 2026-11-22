@@ -24,6 +24,7 @@
     #cancel-edit { background: #fff; color: #111; border: 1px solid #111; }
     button.sub { background: #fff; color: #111; border: 1px solid #111; }
     .answer-label { margin: 12px 0 0; font-size: 13px; font-weight: bold; }
+    #quiz-choice button { margin-right: 4px; }
     #quiz-progress, #quiz-last { font-size: 13px; color: #555; }
     #review-result { white-space: pre-line; }
     details { margin-top: 8px; border: 1px solid #ccc; padding: 8px 12px; }
@@ -65,10 +66,12 @@
         </div>
       </div>
       <button type="button" id="show-answer">정답 보기</button>
+      <span id="quiz-choice" class="hidden"></span>
       <span id="judge" class="hidden">
         <button type="button" id="mark-correct">맞았어요</button>
         <button type="button" id="mark-wrong" class="sub">틀렸어요</button>
       </span>
+      <button type="button" id="quiz-next" class="hidden">다음 문제</button>
       <button type="button" id="stop-review" class="sub">그만하기</button>
       <p id="quiz-last"></p>
     </div>

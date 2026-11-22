@@ -51,6 +51,32 @@ function validateQuestion(input) {
   if (!input.answer.trim()) missing.push("정답");
   return missing;
 }
+
+const CHOICE_MARKS = ["①", "②", "③", "④", "⑤"];
+
+/**
+ * 정답 글이 보기 번호 표시(①~⑤)로 시작하면 번호를 돌려준다.
+ * @param {string} answer 정답 글
+ * @returns {number|null} 1~5 또는 null
+ */
+function getAnswerNo(answer) {
+  if (typeof answer !== "string" || !answer) return null;
+  const i = CHOICE_MARKS.indexOf(answer[0]);
+  return i >= 0 ? i + 1 : null;
+}
+
+/**
+ * 문제 글에서 줄 맨 앞이 보기 번호 표시(①~⑤)인 줄 개수를 센다.
+ * @param {string} question 문제 글
+ * @returns {number}
+ */
+function countChoices(question) {
+  if (typeof question !== "string" || !question) return 0;
+  return question
+    .split(/\r?\n/)
+    .filter(line => /^[①②③④⑤]/.test(line))
+    .length;
+}
 /**
  * 조회 조건에 맞는 문항만 골라낸다. 조건이 빈 값이면 그 조건은 검사하지 않는다.
  * @param {Question[]} list

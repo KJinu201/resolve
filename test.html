@@ -79,6 +79,16 @@
     check("validateQuestion: 필수 칸이 모두 있으면 빈 배열",
       validateQuestion({ subject: "SQLD", question: "문제", answer: "정답" }).length === 0);
 
+    check("getAnswerNo: 정답이 보기 번호 표시(①~⑤)로 시작하면 번호를 돌려줌",
+      getAnswerNo("③ SELECT") === 3 && getAnswerNo("①") === 1 && getAnswerNo("⑤ 마지막") === 5);
+    check("[예외] getAnswerNo: 빈 글·보기 번호로 시작하지 않는 정답·'3번'은 null",
+      getAnswerNo("") === null && getAnswerNo("정답") === null && getAnswerNo("3번") === null);
+
+    check("countChoices: 줄 맨 앞이 보기 번호 표시인 줄 수만 셈",
+      countChoices("문제\n① A\n② B\n설명 ③ C\n④ D") === 3);
+    check("[예외] countChoices: 빈 글이거나 줄 맨 앞에 보기 번호 표시가 없으면 0",
+      countChoices("") === 0 && countChoices("문제\n ① A\n보기 ② B") === 0);
+
     const pool = [
       sample({ id: "a", subject: "SQLD", question: "조인 종류", box: 2 }),
       sample({ id: "b", subject: "ADsP", question: "회귀 분석", box: 2 }),

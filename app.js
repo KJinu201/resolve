@@ -300,7 +300,10 @@ const quizAnswerTextEl = document.getElementById("quiz-answer-text");
 const quizExplBox = document.getElementById("quiz-explanation-box");
 const quizExplEl = document.getElementById("quiz-explanation");
 const showAnswerBtn = document.getElementById("show-answer");
+const quizChoiceEl = document.getElementById("quiz-choice");
 const judgeEl = document.getElementById("judge");
+const quizNextBtn = document.getElementById("quiz-next");
+const stopReviewBtn = document.getElementById("stop-review");
 const quizLastEl = document.getElementById("quiz-last");
 const reviewDoneEl = document.getElementById("review-done");
 const reviewResultEl = document.getElementById("review-result");
@@ -311,6 +314,7 @@ const reviewMsgEl = document.getElementById("review-msg");
  * 다른 화면에 다녀와도 이어서 풀 수 있게 화면과 따로 보관한다.
  */
 let session = null;
+let pendingChoiceResult = null;
 
 /** 복습 화면의 세 부분(시작 / 퀴즈 / 결과) 중 하나만 보여 준다. */
 function showReviewPart(part) {
@@ -389,16 +393,63 @@ function showQuizItem() {
   quizExplBox.classList.toggle("hidden", !q.explanation);
 
   quizAnswerEl.classList.add("hidden");
-  judgeEl.classList.add("hidden");
-  showAnswerBtn.classList.remove("hidden");
+  pendingChoiceResult = null;
+  quizChoiceEl.classList.add("hidden");
+  quizChoiceEl.textContent = "";
+  quizNextBtn.classList.add("hidden");
+  stopReviewBtn.classList.remove("hidden");
+
+  const answerNo = getAnswerNo(q.answer);
+  const choiceCount = countChoices(q.question);
+  const useChoiceButtons = answerNo !== null && answerNo <= choiceCount;
+  if (useChoiceButtons) {
+    for (let i = 1; i <= choiceCount; i++) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = CHOICE_MARKS[i - 1];
+      btn.addEventListener("click", () => chooseAnswer(i, answerNo));
+      quizChoiceEl.appendChild(btn);
+    }
+    showAnswerBtn.classList.add("hidden");
+    judgeEl.classList.add("hidden");
+    quizChoiceEl.classList.remove("hidden");
+  } else {
+    judgeEl.classList.add("hidden");
+    showAnswerBtn.classList.remove("hidden");
+  }
   showReviewPart("quiz");
 }
 
-/** 정답과 해설을 펼치고 맞음/틀림 버튼을 보여 준다. */
+/** 정답과 해설을 펼친다. */
 function revealAnswer() {
   quizAnswerEl.classList.remove("hidden");
+}
+
+/** 정답과 해설을 펼치고 맞음/틀림 버튼을 보여 준다. */
+function revealAnswerAndJudge() {
+  revealAnswer();
   showAnswerBtn.classList.add("hidden");
   judgeEl.classList.remove("hidden");
+}
+
+/** 객관식 번호를 고르면 즉시 채점 결과를 보여 준다. */
+function chooseAnswer(chosenNo, answerNo) {
+  quizChoiceEl.querySelectorAll("button").forEach(btn => {
+    btn.disabled = true;
+  });
+  revealAnswer();
+  const correct = chosenNo === answerNo;
+  pendingChoiceResult = correct;
+  if (correct) {
+    quizLastEl.textContent = "맞았습니다";
+  } else {
+    quizLastEl.textContent = "틀렸습니다 (고른 답 " + chosenNo + "번, 정답 " + answerNo + "번)";
+  }
+  quizChoiceEl.classList.add("hidden");
+  showAnswerBtn.classList.add("hidden");
+  judgeEl.classList.add("hidden");
+  stopReviewBtn.classList.add("hidden");
+  quizNextBtn.classList.remove("hidden");
 }
 
 /**
@@ -413,7 +464,7 @@ function markAnswer(correct) {
     updated = answerQuestion(id, correct, todayStr());
   } catch (e) {
     showSaveError(reviewMsgEl);
-    return;
+    return false;
   }
   reviewMsgEl.textContent = "";
 
@@ -428,6 +479,7 @@ function markAnswer(correct) {
   }
   session.index++;
   showQuizItem();
+  return true;
 }
 
 /** 복습을 끝내고 결과를 보여 준다. (그만하기로 중간에 끝내도 같음) */
@@ -446,10 +498,14 @@ function finishReview() {
 }
 
 startReviewBtn.addEventListener("click", startReview);
-showAnswerBtn.addEventListener("click", revealAnswer);
+showAnswerBtn.addEventListener("click", revealAnswerAndJudge);
+quizNextBtn.addEventListener("click", () => {
+  if (pendingChoiceResult === null) return;
+  markAnswer(pendingChoiceResult);
+});
 document.getElementById("mark-correct").addEventListener("click", () => markAnswer(true));
 document.getElementById("mark-wrong").addEventListener("click", () => markAnswer(false));
-document.getElementById("stop-review").addEventListener("click", finishReview);
+stopReviewBtn.addEventListener("click", finishReview);
 document.getElementById("back-review").addEventListener("click", renderReview);
 
 // 처음 열면 오늘의 복습 화면부터 보여 준다
