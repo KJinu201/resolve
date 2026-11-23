@@ -418,6 +418,11 @@ function showQuizItem() {
     showAnswerBtn.classList.remove("hidden");
   }
   showReviewPart("quiz");
+
+  // 이 문제에서 이미 번호를 골랐다면 고른 결과를 그대로 다시 보여 준다
+  if (useChoiceButtons && session.chosen && session.chosen.index === session.index) {
+    chooseAnswer(session.chosen.no, answerNo);
+  }
 }
 
 /** 정답과 해설을 펼친다. */
@@ -434,6 +439,7 @@ function revealAnswerAndJudge() {
 
 /** 객관식 번호를 고르면 즉시 채점 결과를 보여 준다. */
 function chooseAnswer(chosenNo, answerNo) {
+  session.chosen = { index: session.index, no: chosenNo }; // 다른 화면에 다녀와도 다시 고르지 못하게 기억
   quizChoiceEl.querySelectorAll("button").forEach(btn => {
     btn.disabled = true;
   });
